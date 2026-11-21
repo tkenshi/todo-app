@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ToDoリスト</title>
+
+  <style>
+    body {
+      text-align: center;
+    }
+
+    ul {
+      width: 300px;
+      margin: 0 auto;
+      padding: 0;
+      text-align: left;
+      list-style: none;
+    }
+
+    #taskInput {
+      width: 250px;
+      padding: 8px;
+      font-size: 16px;
+    }
+
+    #addButton {
+      padding: 8px 12px;
+      font-size: 16px;
+    }
+
+    li input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+
+    li input:checked + span {
+      text-decoration: line-through;
+      color: gray;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>ToDoリスト</h1>
+  <input id="taskInput" placeholder="やることを入力">
+  <button id="addButton">追加</button>
+  <ul id="taskList"></ul>
+
+  <script>
+    const input = document.getElementById("taskInput");
+    const button = document.getElementById("addButton");
+    const list = document.getElementById("taskList");
+
+    // 保存されたデータを読み込む（なければ空の配列から始める）
+    let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+
+    // 配列を localStorage に保存する
+    function save() {
+      localStorage.setItem("tasks", JSON.stringify(tasks));
+    }
+
+    // 配列をもとに、画面を作り直す
+    function render() {
+      list.innerHTML = "";
+
+      tasks.forEach((task, index) => {
+        const li = document.createElement("li");
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.checked = task.done;
+        checkbox.addEventListener("change", () => {
+          task.done = checkbox.checked;
+          save();
+        });
+
+        const span = document.createElement("span");
+        span.textContent = task.text;
+
+        const deleteButton = document.createElement("button");
+        deleteButton.textContent = "削除";
+        deleteButton.addEventListener("click", () => {
+          tasks.splice(index, 1);
+          save();
+          render();
+        });
+
+        li.appendChild(checkbox);
+        li.appendChild(span);
+        li.appendChild(deleteButton);
+        list.appendChild(li);
+      });
+    }
+
+    function addTask() {
+      if (input.value.trim() === "") {
+        return;
+      }
+      tasks.push({ text: input.value, done: false });
+      save();
+      render();
+      input.value = "";
+    }
+
+    button.addEventListener("click", addTask);
+
+    input.addEventListener("keydown", (event) => {
+      if (event.isComposing) {
+        return;
+      }
+      if (event.key === "Enter") {
+        addTask();
+      }
+    });
+
+    // ページを開いたときに、保存されたデータで画面を作る
+    render();
+  </script>
+
+</body>
+</html>
