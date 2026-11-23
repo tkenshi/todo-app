@@ -177,7 +177,29 @@ li.over {
         list.appendChild(li);
       });
     }
-  </script>
+        function addTask() {
+      if (input.value.trim() === "") {
+        return;
+      }
+      tasks.push({ text: input.value, done: false });
+      save();
+      render();
+      input.value = "";
+    }
 
+    button.addEventListener("click", addTask);
+
+    input.addEventListener("keydown", (event) => {
+      if (event.isComposing) {
+        return;
+      }
+      if (event.key === "Enter") {
+        addTask();
+      }
+    });
+
+    // ページを開いたときに、保存されたデータで画面を作る
+    render();
+  </script>
 </body>
 </html>
