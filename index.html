@@ -40,6 +40,18 @@
       text-decoration: line-through;
       color: gray;
     }
+    li {
+  cursor: grab;
+  padding: 4px;
+}
+
+li.dragging {
+  opacity: 0.4;
+}
+
+li.over {
+  background: #e8f0fe;
+}
   </style>
 </head>
 <body>
@@ -63,11 +75,66 @@
     }
 
     // 配列をもとに、画面を作り直す
+        // いまつかんでいる行が、何番目かを覚えておく箱（何もつかんでいないときは null）
+    let dragIndex = null;
+
+    // 「ここに入ります」の色を、すべての行から消す
+    function clearOver() {
+      list.querySelectorAll("li.over").forEach((el) => {
+        el.classList.remove("over");
+      });
+    }
+
+    function swap(i, j) {
+      const temp = tasks[i];
+      tasks[i] = tasks[j];
+      tasks[j] = temp;
+      save();
+      render();
+    }
+
     function render() {
       list.innerHTML = "";
 
       tasks.forEach((task, index) => {
         const li = document.createElement("li");
+
+        // この行を、つかめるようにする
+        li.draggable = true;
+
+        // 行をつかんだとき
+        li.addEventListener("dragstart", (event) => {
+          dragIndex = index;
+          li.classList.add("dragging");
+          event.dataTransfer.setData("text/plain", index); // Firefox用のおまじない
+        });
+
+        // 行を離したとき（成功しても、失敗しても必ず呼ばれる）
+        li.addEventListener("dragend", () => {
+          dragIndex = null;
+          li.classList.remove("dragging");
+          clearOver();
+        });
+
+        // つかんだ行が、この行の上を通っているとき
+        li.addEventListener("dragover", (event) => {
+          event.preventDefault(); // これがないと、離しても受け付けてもらえない
+          clearOver();
+          li.classList.add("over");
+        });
+
+        // この行の上で離したとき
+        li.addEventListener("drop", (event) => {
+          event.preventDefault();
+          if (dragIndex === null || dragIndex === index) {
+            return;
+          }
+          const moved = tasks.splice(dragIndex, 1)[0]; // つかんだ行を、配列から取り出す
+          tasks.splice(index, 0, moved);               // 離した場所に差し込む
+          dragIndex = null;
+          save();
+          render();
+        });
 
         const checkbox = document.createElement("input");
         checkbox.type = "checkbox";
@@ -80,6 +147,20 @@
         const span = document.createElement("span");
         span.textContent = task.text;
 
+        const upButton = document.createElement("button");
+        upButton.textContent = "↑";
+        upButton.disabled = index === 0;
+        upButton.addEventListener("click", () => {
+          swap(index, index - 1);
+        });
+
+        const downButton = document.createElement("button");
+        downButton.textContent = "↓";
+        downButton.disabled = index === tasks.length - 1;
+        downButton.addEventListener("click", () => {
+          swap(index, index + 1);
+        });
+
         const deleteButton = document.createElement("button");
         deleteButton.textContent = "削除";
         deleteButton.addEventListener("click", () => {
@@ -90,34 +171,12 @@
 
         li.appendChild(checkbox);
         li.appendChild(span);
+        li.appendChild(upButton);
+        li.appendChild(downButton);
         li.appendChild(deleteButton);
         list.appendChild(li);
       });
     }
-
-    function addTask() {
-      if (input.value.trim() === "") {
-        return;
-      }
-      tasks.push({ text: input.value, done: false });
-      save();
-      render();
-      input.value = "";
-    }
-
-    button.addEventListener("click", addTask);
-
-    input.addEventListener("keydown", (event) => {
-      if (event.isComposing) {
-        return;
-      }
-      if (event.key === "Enter") {
-        addTask();
-      }
-    });
-
-    // ページを開いたときに、保存されたデータで画面を作る
-    render();
   </script>
 
 </body>
